@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "EAB5AAEAB13318EE0F4FB7AF53BD9B51C847F02D",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "6B9129BF17FCCDF8093E7E1A108F949B7C917F7E" : 0,
+    "EAB5AAEAB13318EE0F4FB7AF53BD9B51C847F02D" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "474D4055-B31F-411D-A8C3-792FDB533BCB",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "6B9129BF17FCCDF8093E7E1A108F949B7C917F7E" : "oFreeSphereCore\/src\/OmniRender\/",
+    "EAB5AAEAB13318EE0F4FB7AF53BD9B51C847F02D" : "oFreeSphereCore\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "oFreeSphereCore",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "oFreeSphereCore.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/younkhg\/OmniRender.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "6B9129BF17FCCDF8093E7E1A108F949B7C917F7E"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:cannedStar\/oFreeSphereCore.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "EAB5AAEAB13318EE0F4FB7AF53BD9B51C847F02D"
+    }
+  ]
+}
