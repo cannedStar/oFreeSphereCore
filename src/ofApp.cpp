@@ -4,28 +4,28 @@
 //with eliminated projection and modelviewprojection matrices)
 //We can eliminate these because open frameworks sets uniforms only if they are found
 //om::vertexDisplacement
-static const string omCustomVertexShader = om::glslVersion  + R"(
+static const string omCustomVertexShader = om::glslVersion  + om::vertexDisplacement + R"(
 
-  uniform mat4 modelViewMatrix;
-  uniform mat4 textureMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 textureMatrix;
+uniform mat4 modelViewProjectionMatrix;
 
-  uniform vec4 color;
+in vec4 position;
+in vec4 color;
+in vec3 normal;
+in vec2 texcoord;
 
-  in vec4  position;
-  //in vec2  texcoord;
- // in vec3  normal;
+out vec4 colorVarying;
+out vec2 texCoordVarying;
+vec3 normalVarying;
 
-  out vec4 colorVarying;
-  //out vec2 texCoordVarying;
-  //out vec4 normalVarying;
-
-  void main()
-  {
-    colorVarying = color;
-    //texCoordVarying = (textureMatrix*vec4(texcoord.x,texcoord.y,0,1)).xy;
-    //gl_Position =  omVertexDisplacement(position);
-    gl_Position = position;
-  }
+void main() {
+  colorVarying = color;
+  normalVarying = normal;
+  texCoordVarying = (textureMatrix*vec4(texcoord.x,texcoord.y,0,1)).xy;
+  gl_Position = ( projectionMatrix * modelViewMatrix * position );//omVertexDisplacement
+}
   
 )";
 
@@ -37,18 +37,19 @@ uniform mat4 textureMatrix;
 uniform mat4 modelViewProjectionMatrix; 
 
 in vec4 position; 
-in vec2 texcoord; 
 in vec4 color; 
 in vec3 normal; 
+in vec2 texcoord; 
 
 out vec4 colorVarying; 
 out vec2 texCoordVarying; 
-out vec4 normalVarying; 
+vec3 normalVarying; 
 
 void main() { 
 	colorVarying = color; 
+  normalVarying = normal;
 	texCoordVarying = (textureMatrix*vec4(texcoord.x,texcoord.y,0,1)).xy; 
-	gl_Position = modelViewProjectionMatrix * position; 
+	gl_Position = projectionMatrix * modelViewMatrix * position;
 }
 )";
 
@@ -78,13 +79,18 @@ void main(){
 }
 )";
 
-float camX = 0, camY = 0, camZ = 5;
-float lookX = 0, lookY = 0, lookZ = 0;
-ofVec3f up_vec(0, 1, 0);
 
-om::Render render;
-ofCamera cam_capture;
-ofIcoSpherePrimitive icoSphere(5, 1);
+//CUSTOM ADAPTER FUNCTIONS
+
+template<>
+void om::ShaderProgram::Uniform1f<ofShader>(const ofShader& s, std::string name, float val){
+  s.setUniform1f(name,val);
+}
+
+template<>
+void om::ShaderProgram::Uniform1i<ofShader>(const ofShader& s, std::string name, float val){
+  s.setUniform1i(name,val);
+}
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -93,7 +99,7 @@ void ofApp::setup(){
   ofDisableAntiAliasing();
   ofBackground(255, 0, 0);
 
-  cam_capture.setPosition(camX, camY, camZ);
+  camera.setPosition(camX, camY, camZ);
   
 
   om::Render::Settings s;
@@ -103,14 +109,15 @@ void ofApp::setup(){
   s.winHeight = ofGetHeight();
   s.near = 10;
   s.stereoMode = om::MONO;
-  //render.init(s);
-  render.captureShader.loadString( ofDefaultVertexShader, ofDefaultFragmentShader );
 
 
-  printf("position %d\n", render.captureShader.attributeLocation("position"));
-  printf("texcoord %d\n", render.captureShader.attributeLocation("texcoord"));
-  printf("color %d\n", render.captureShader.attributeLocation("color"));
-  printf("normal %d\n", render.captureShader.attributeLocation("normal"));
+  myShader.setupShaderFromSource(GL_VERTEX_SHADER, omCustomVertexShader);//ofDefaultVertexShader);
+  myShader.setupShaderFromSource(GL_FRAGMENT_SHADER, ofDefaultFragmentShader);
+  myShader.bindDefaults(); //bind attributes to default locations
+  myShader.linkProgram(); //link compiled programs
+  
+  render.init(s);
+
   
   printf("SETUP\n");
 
@@ -121,27 +128,18 @@ void ofApp::update(){
   float t = ofGetElapsedTimef();
   lookX = sinf(t * 0.1);
   lookZ = cosf(t * 0.1);
-  cam_capture.lookAt(ofVec3f(lookX, lookY, lookZ), up_vec);
+  //camera.lookAt(ofVec3f(0, 0, 0), up_vec);
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-  auto ofr = ofGetCurrentRenderer();
-  ofr->loadViewMatrix(cam_capture.getModelViewMatrix());
+    auto ofr = std::static_pointer_cast<ofGLProgrammableRenderer>(ofGetCurrentRenderer());
+ 
+     // render.tmpbegin();
+      camera.begin();
+      OM_RENDER_BEGIN(render, myShader );
 
-//  static int x = 1;
-//  if (x==1){
-//   auto ofr = std::static_pointer_cast<ofGLProgrammableRenderer>(ofGetCurrentRenderer());
-//   auto vs = ofr -> getCurrentShader().getShaderSource(GL_VERTEX_SHADER);
-//   auto fs = ofr -> getCurrentShader().getShaderSource(GL_FRAGMENT_SHADER);
-//
-//   printf("%s\n%s\n", vs.c_str(), fs.c_str());
-//  
-//    x++;
-//  }
-  
- // OM_RENDER_BEGIN(render)
- //     render.captureShader.begin();
+      //om::ShaderProgram::Begin( myShader );
       for (int x = -5; x <= 5; x++)
         for (int y = -5; y <= 5; y++)
           for (int z = -5; z <= 5; z++) {
@@ -151,12 +149,19 @@ void ofApp::draw(){
             ofPushMatrix();
             ofTranslate(40 * x, 40 * y, 40 * z);
             ofSetColor(r, g, b);
+            
             ofr->draw(icoSphere, OF_MESH_FILL);
+            
             ofPopMatrix();
           }
- //     render.captureShader.end();
+    //  om::ShaderProgram::End( myShader );
 
-//  OM_RENDER_END(render)      
+     //render.tmpend();
+  
+  
+     OM_RENDER_END(render, myShader);
+      camera.end();
+
 }
 
 //--------------------------------------------------------------

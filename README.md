@@ -15,6 +15,7 @@ This includes 4 matrices,
 		uniform mat4 textureMatrix;
 		uniform mat4 modelViewProjectionMatrix;
 
+Which are loaded into in the `uploadMatrices()` method called from `bind( ofShader )`
 But the `setUniformMatrix4f` function of ofShader checks to see whether such names exist before
 attempting to upload data to the gpu.  So we can stick with just
 
@@ -27,12 +28,15 @@ Similary, Open Frameworks' 4 input vertex attributes are only set if they exist:
 		in vec4  color;
 		in vec3  normal;
 
-But they need be bound as in `ofShader::bindDefaults()`:
+But their locations need be bound as in `ofShader::bindDefaults()`:
 
 		bindAttribute(ofShader::POSITION_ATTRIBUTE,::POSITION_ATTRIBUTE);
 		bindAttribute(ofShader::COLOR_ATTRIBUTE,::COLOR_ATTRIBUTE);
 		bindAttribute(ofShader::NORMAL_ATTRIBUTE,::NORMAL_ATTRIBUTE);
 		bindAttribute(ofShader::TEXCOORD_ATTRIBUTE,::TEXCOORD_ATTRIBUTE);
+
+Which may be confusing: the first parameter is an integer and the second a string.
+"position" is 0, "color" is 1, normal" is 2, and "tex" is 3
 
 So need to call 
 
