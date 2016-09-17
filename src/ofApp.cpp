@@ -1,9 +1,6 @@
 #include "ofApp.h"
 
-//Custom Shader (copied from ofGLProgrammableRenderer::defaultVertexShader, 
-//with eliminated projection and modelviewprojection matrices)
-//We can eliminate these because open frameworks sets uniforms only if they are found
-//om::vertexDisplacement
+//Custom Shader (modified from ofGLProgrammableRenderer::defaultVertexShader)
 static const string omCustomVertexShader = om::glslVersion  + om::vertexDisplacement + R"(
 
 uniform mat4 projectionMatrix;
@@ -24,47 +21,12 @@ void main() {
   colorVarying = color;
   normalVarying = normal;
   texCoordVarying = (textureMatrix*vec4(texcoord.x,texcoord.y,0,1)).xy;
-  gl_Position = ( projectionMatrix * modelViewMatrix * position );//omVertexDisplacement
+  gl_Position = omVertexDisplacement(modelViewMatrix * position );//omVertexDisplacement
 }
   
 )";
 
-static const string ofDefaultVertexShader = R"(
-#version 150
-uniform mat4 projectionMatrix; 
-uniform mat4 modelViewMatrix; 
-uniform mat4 textureMatrix; 
-uniform mat4 modelViewProjectionMatrix; 
-
-in vec4 position; 
-in vec4 color; 
-in vec3 normal; 
-in vec2 texcoord; 
-
-out vec4 colorVarying; 
-out vec2 texCoordVarying; 
-vec3 normalVarying; 
-
-void main() { 
-	colorVarying = color; 
-  normalVarying = normal;
-	texCoordVarying = (textureMatrix*vec4(texcoord.x,texcoord.y,0,1)).xy; 
-	gl_Position = projectionMatrix * modelViewMatrix * position;
-}
-)";
-
-
-static const string omCustomFragmentShader = om::glslVersion + R"(
-  in vec4 colorVarying;
-  out vec4 frag_color;
-  void main() {
-
-    frag_color = colorVarying;
-
-  }
-
-)";
-
+// Same as typical of default fragment shader
 static const string ofDefaultFragmentShader = R"(
 #version 150
 uniform float usingTexture; 
@@ -80,8 +42,7 @@ void main(){
 )";
 
 
-//CUSTOM ADAPTER FUNCTIONS
-
+//CUSTOM ADAPTER FUNCTIONS defines how user shader class binds variables
 template<>
 void om::ShaderProgram::Uniform1f<ofShader>(const ofShader& s, std::string name, float val){
   s.setUniform1f(name,val);
@@ -100,46 +61,39 @@ void ofApp::setup(){
   ofBackground(255, 0, 0);
 
   camera.setPosition(camX, camY, camZ);
-  
 
+  /// OM INITIALIZATION
   om::Render::Settings s;
   s.configPath = om::al::configPath(om::OF);
-  s.cubeMapRes = 128;
+  s.cubeMapRes = 1024;
   s.winWidth = ofGetWidth();
   s.winHeight = ofGetHeight();
   s.near = 10;
   s.stereoMode = om::MONO;
-
-
-  myShader.setupShaderFromSource(GL_VERTEX_SHADER, omCustomVertexShader);//ofDefaultVertexShader);
-  myShader.setupShaderFromSource(GL_FRAGMENT_SHADER, ofDefaultFragmentShader);
-  myShader.bindDefaults(); //bind attributes to default locations
-  myShader.linkProgram(); //link compiled programs
-  
   render.init(s);
-
   
+  /// SET UP CUSTOM SHADER
+  myShader.setupShaderFromSource(GL_VERTEX_SHADER, omCustomVertexShader);
+  myShader.setupShaderFromSource(GL_FRAGMENT_SHADER, ofDefaultFragmentShader);
+  myShader.bindDefaults(); //bind attributes to default locations (e.g. "position" is bound to 0)
+  myShader.linkProgram();  //link compiled programs
+  
+
   printf("SETUP\n");
 
 }
 
 //--------------------------------------------------------------
-void ofApp::update(){
-  float t = ofGetElapsedTimef();
-  lookX = sinf(t * 0.1);
-  lookZ = cosf(t * 0.1);
-  //camera.lookAt(ofVec3f(0, 0, 0), up_vec);
-}
+void ofApp::update(){}
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     auto ofr = std::static_pointer_cast<ofGLProgrammableRenderer>(ofGetCurrentRenderer());
  
-     // render.tmpbegin();
       camera.begin();
+  
       OM_RENDER_BEGIN(render, myShader );
 
-      //om::ShaderProgram::Begin( myShader );
       for (int x = -5; x <= 5; x++)
         for (int y = -5; y <= 5; y++)
           for (int z = -5; z <= 5; z++) {
@@ -154,12 +108,9 @@ void ofApp::draw(){
             
             ofPopMatrix();
           }
-    //  om::ShaderProgram::End( myShader );
+ 
+      OM_RENDER_END(render, myShader);
 
-     //render.tmpend();
-  
-  
-     OM_RENDER_END(render, myShader);
       camera.end();
 
 }
