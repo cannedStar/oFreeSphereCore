@@ -1,6 +1,19 @@
 #include "ofApp.h"
 
-//Custom Shader (modified from ofGLProgrammableRenderer::defaultVertexShader)
+/// It is generally preferable to use your frameworks own shader class for creating the modified shader
+/// because calling YourFrameWork::Shader::bind() method may do funky things (as in Open Frameworks)
+/// which require asking for current render context, etc.
+///
+/// Steps: 1. Create Custom ofShader with omVertexDisplacement function
+///        2. Define Adaptor Functions for ShaderProgram::Uniform1f and ShaderProgram::Uniform1i
+///                  (note for other frameworks we may also need adaptors for ShaderProgram::Begin and ShaderProgram::End)
+///        3. Initialize Custom ofShader and Om::Render object
+///        4. Bracket draw routine with OM_RENDER_BEGIN(render,shader) and OM_RENDER_END(render,shader) macros
+///
+/// --GG
+
+
+// 1. Custom Shader (modified from ofGLProgrammableRenderer::defaultVertexShader)
 static const string omCustomVertexShader = om::glslVersion  + om::vertexDisplacement + R"(
 
 uniform mat4 projectionMatrix;
@@ -42,7 +55,7 @@ void main(){
 )";
 
 
-//CUSTOM ADAPTER FUNCTIONS defines how user shader class binds variables
+///2. DEFINE ADAPTER FUNCTIONS (used by Om::Render class to specify how user's shader class binds uniform variables)
 template<>
 void om::ShaderProgram::Uniform1f<ofShader>(const ofShader& s, std::string name, float val){
   s.setUniform1f(name,val);
@@ -61,8 +74,14 @@ void ofApp::setup(){
   ofBackground(255, 0, 0);
 
   camera.setPosition(camX, camY, camZ);
+  
+  /// SET UP CUSTOM SHADER
+  myShader.setupShaderFromSource(GL_VERTEX_SHADER, omCustomVertexShader);
+  myShader.setupShaderFromSource(GL_FRAGMENT_SHADER, ofDefaultFragmentShader);
+  myShader.bindDefaults(); //bind attributes to default locations (e.g. "position" is bound to 0)
+  myShader.linkProgram();  //link compiled programs
 
-  /// OM INITIALIZATION
+  /// INITIALIZE om::Render
   om::Render::Settings s;
   s.configPath = om::al::configPath(om::OF);
   s.cubeMapRes = 1024;
@@ -71,15 +90,6 @@ void ofApp::setup(){
   s.near = 10;
   s.stereoMode = om::MONO;
   render.init(s);
-  
-  /// SET UP CUSTOM SHADER
-  myShader.setupShaderFromSource(GL_VERTEX_SHADER, omCustomVertexShader);
-  myShader.setupShaderFromSource(GL_FRAGMENT_SHADER, ofDefaultFragmentShader);
-  myShader.bindDefaults(); //bind attributes to default locations (e.g. "position" is bound to 0)
-  myShader.linkProgram();  //link compiled programs
-  
-
-  printf("SETUP\n");
 
 }
 
@@ -92,7 +102,8 @@ void ofApp::draw(){
  
       camera.begin();
   
-      OM_RENDER_BEGIN(render, myShader );
+      ///3. BRACKET DRAW METHODS WITH OM_RENDER_BEGIN and OM_RENDER_END MACROS
+      OM_RENDER_BEGIN(render, myShader);
 
       for (int x = -5; x <= 5; x++)
         for (int y = -5; y <= 5; y++)
