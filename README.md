@@ -1,9 +1,17 @@
 Here we are testing the OmniRender library against Open Frameworks
 using the GL version 3,2 core profile.
 
-We need to design a shader that incorporates the omnirender
-pipeline, and also is compatible with Open Frameworks calls such
+The current strategy is to create a custom ofShader that incorporates the omnirender
+vertex displacement function, and corresponding uniforms.  We then pass this and our
+om::Render object into a macro OM_RENDER_BEGIN(render,shader). In that macro,
+we call "Adaptor functions" such as `om::ShaderProgram::Begin<ofShader>(const ofShader& s)`
+which have default definitions but can be overloaded for different Shader class types by a user.
+
+We must use an ofShader so that when we bind it, it does the necessary behind the scene
+communication with `ofGLProgrammableRenderer` and remains compatible with Open Frameworks calls such
 as `uploadCurrentMatrix()` in `ofGLProgrammableRenderer.cpp` (line 785)
+
+Some more notes on how open frameworks works follows:
 
 The `currentShader` in that method refers to a shader that has been passed to the `::bind` method.
 If we bind our own with `::bind` this sets `usingCustomShader` to true, and then calls `uploadMatrices`
@@ -46,6 +54,3 @@ Then create and enable vertex array object, and pointer to offsets in memory.  T
 `ofVBO::bind()` which does a flurry of tests to see where we are in the process.  `bind()` is called 
 every time an instance of an `ofVBOmesh` is drawn.  If VAO's are supported, then we do not need to
 enable and point specific attributes every time (just the first time, checked for with `vaoChanged`).
-
-So, is the `enable()` method of the ofVBO::VertexAttribute class sufficient to find our current bound
-shader vertex attributes? 
